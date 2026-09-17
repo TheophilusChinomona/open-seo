@@ -18,10 +18,8 @@ export function getDatabaseProvider(): DatabaseProvider {
   );
 }
 
-// Postgres is only reachable through the HYPERDRIVE binding — never a direct
-// connection string from a Worker var. In local dev the binding resolves to
-// `localConnectionString` from wrangler.jsonc (miniflare never contacts real
-// Hyperdrive), so the same code path covers both.
+// Cloudflare deployments use the HYPERDRIVE binding. Self-hosted Docker has no
+// binding, so it uses the protected runtime connection string instead.
 export function getPostgresConnectionString() {
   const hyperdrive = Reflect.get(env, "HYPERDRIVE") as
     | { connectionString?: string }
@@ -31,7 +29,12 @@ export function getPostgresConnectionString() {
     return hyperdriveUrl;
   }
 
+  const dockerUrl = Reflect.get(env, "POSTGRES_DATABASE_URL");
+  if (typeof dockerUrl === "string" && dockerUrl.trim()) {
+    return dockerUrl.trim();
+  }
+
   throw new Error(
-    "DATABASE_PROVIDER=postgres requires a HYPERDRIVE binding (in local dev, its localConnectionString).",
+    "DATABASE_PROVIDER=postgres requires HYPERDRIVE or POSTGRES_DATABASE_URL. Set POSTGRES_DATABASE_URL for Docker deployments.",
   );
 }

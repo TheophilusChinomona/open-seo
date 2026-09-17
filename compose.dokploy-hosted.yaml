@@ -2,7 +2,7 @@
 # Configure Dokploy to read this file from the fork's main branch.
 services:
   open-seo:
-    image: ${OPEN_SEO_IMAGE:-ghcr.io/TheophilusChinomona/open-seo:latest}
+    image: ${OPEN_SEO_IMAGE:-ghcr.io/theophiluschinomona/open-seo:latest}
     restart: unless-stopped
     environment:
       CLOUDFLARE_INCLUDE_PROCESS_ENV: "true"

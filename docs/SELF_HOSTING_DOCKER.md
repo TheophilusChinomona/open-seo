@@ -120,6 +120,12 @@ The overlay explicitly forwards the auth, database, model, email, DataForSEO,
 and OpenRouter settings. It does not support `BYPASS_EMAIL_VERIFICATION`; do
 not set that variable in production.
 
+For Dokploy, use the standalone `compose.dokploy-hosted.yaml` definition from
+the fork's `main` branch. It includes the image, persistent volume, and both
+external networks (`dokploy-network` and the private PostgreSQL network), so it
+does not depend on a local `.env` file. Keep auto-deploy disabled until the
+manual staging and authenticated acceptance checks pass.
+
 ## Troubleshooting environment variables
 
 To confirm Docker Compose is using the expected environment variables:

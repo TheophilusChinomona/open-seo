@@ -1,0 +1,44 @@
+# Dokploy production Compose definition.
+# Configure Dokploy to read this file from the fork's main branch.
+services:
+  open-seo:
+    image: ${OPEN_SEO_IMAGE:-ghcr.io/TheophilusChinomona/open-seo:latest}
+    restart: unless-stopped
+    environment:
+      CLOUDFLARE_INCLUDE_PROCESS_ENV: "true"
+      PORT: "3001"
+      AUTH_MODE: hosted
+      DATABASE_PROVIDER: postgres
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      POSTGRES_DATABASE_URL: ${POSTGRES_DATABASE_URL}
+      ALLOWED_HOST: ${ALLOWED_HOST}
+      DATAFORSEO_API_KEY: ${DATAFORSEO_API_KEY}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-stealth/union-alpha}
+      OPENSEO_TELEMETRY_DISABLED: ${OPENSEO_TELEMETRY_DISABLED:-1}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      LOOPS_API_KEY: ${LOOPS_API_KEY}
+      LOOPS_TRANSACTIONAL_VERIFY_EMAIL_ID: ${LOOPS_TRANSACTIONAL_VERIFY_EMAIL_ID}
+      LOOPS_TRANSACTIONAL_RESET_PASSWORD_ID: ${LOOPS_TRANSACTIONAL_RESET_PASSWORD_ID}
+      LOOPS_TRANSACTIONAL_INVITATION_ID: ${LOOPS_TRANSACTIONAL_INVITATION_ID}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY}
+      VITE_SHOW_DEVTOOLS: "false"
+    volumes:
+      - open_seo_data:/app/.wrangler
+    networks:
+      - dokploy-network
+      - open-seo-db
+
+volumes:
+  open_seo_data:
+
+networks:
+  dokploy-network:
+    external: true
+    name: dokploy-network
+  open-seo-db:
+    external: true
+    name: ${OPEN_SEO_DB_NETWORK:-open-seo-db}

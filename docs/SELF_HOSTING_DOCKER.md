@@ -91,6 +91,35 @@ docker compose down
 
 Startup checks appear in `docker compose logs` before the build. Once running, `/api/health` reports configuration and database status, and `docker compose ps` reports container health.
 
+## Hosted Better Auth with private PostgreSQL
+
+For a multi-organization deployment, keep the base Compose file as the local
+no-auth rollback and apply the hosted overlay:
+
+```bash
+docker network create --internal open-seo-db
+cp .env.example .env
+# Set the hosted variables below in .env or in the deployment secret store.
+docker compose -f compose.yaml -f compose.hosted.yaml up -d
+```
+
+The overlay requires `AUTH_MODE=hosted`, `DATABASE_PROVIDER=postgres`,
+`BETTER_AUTH_URL`, a random `BETTER_AUTH_SECRET` of at least 32 characters,
+the Google OAuth credentials, all three Loops transactional email variables,
+and `POSTGRES_DATABASE_URL`. The URL must target the private PostgreSQL
+network and the `open_seo` database using the least-privilege
+`open_seo_app` role. URL-encode reserved characters in its password.
+
+Before starting the app, attach the PostgreSQL container to the exact same
+external network. Apply `drizzle-pg` migrations with the protected connection
+string, never with a PostgreSQL administrator URL. Do not publish PostgreSQL's
+port. Keep `compose.yaml` and its `open_seo_data` volume unchanged until the
+hosted deployment has passed authenticated acceptance and the rollback window.
+
+The overlay explicitly forwards the auth, database, model, email, DataForSEO,
+and OpenRouter settings. It does not support `BYPASS_EMAIL_VERIFICATION`; do
+not set that variable in production.
+
 ## Troubleshooting environment variables
 
 To confirm Docker Compose is using the expected environment variables:

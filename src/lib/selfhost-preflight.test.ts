@@ -114,8 +114,12 @@ describe("runSelfhostPreflight", () => {
     });
 
     expect(result.failed).toBe(true);
-    expect(itemFor(result, "AUTH_MODE")?.message).toContain("RESEND_FROM_EMAIL");
-    expect(itemFor(result, "AUTH_MODE")?.message).not.toContain("RESEND_API_KEY");
+    expect(itemFor(result, "AUTH_MODE")?.message).toContain(
+      "RESEND_FROM_EMAIL",
+    );
+    expect(itemFor(result, "AUTH_MODE")?.message).not.toContain(
+      "RESEND_API_KEY",
+    );
   });
 
   it("mentions ALLOWED_HOST when unset", () => {

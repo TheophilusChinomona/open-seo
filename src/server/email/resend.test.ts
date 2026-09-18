@@ -28,17 +28,19 @@ describe("hosted auth email config", () => {
 
   it("is configured only when both Resend values are present", () => {
     expect(
-      hasHostedAuthEmailConfig({ RESEND_API_KEY: "re_x", RESEND_FROM_EMAIL: FROM }),
+      hasHostedAuthEmailConfig({
+        RESEND_API_KEY: "re_x",
+        RESEND_FROM_EMAIL: FROM,
+      }),
     ).toBe(true);
-    expect(
-      hasHostedAuthEmailConfig({ RESEND_API_KEY: "re_x" }),
-    ).toBe(false);
-    expect(
-      hasHostedAuthEmailConfig({ RESEND_FROM_EMAIL: FROM }),
-    ).toBe(false);
+    expect(hasHostedAuthEmailConfig({ RESEND_API_KEY: "re_x" })).toBe(false);
+    expect(hasHostedAuthEmailConfig({ RESEND_FROM_EMAIL: FROM })).toBe(false);
     // Whitespace-only values are not configuration.
     expect(
-      hasHostedAuthEmailConfig({ RESEND_API_KEY: "re_x", RESEND_FROM_EMAIL: " " }),
+      hasHostedAuthEmailConfig({
+        RESEND_API_KEY: "re_x",
+        RESEND_FROM_EMAIL: " ",
+      }),
     ).toBe(false);
   });
 });

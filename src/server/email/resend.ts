@@ -153,8 +153,7 @@ export async function sendHostedVerificationEmail({
       body: "Confirm your email address to finish setting up OpenSEO.",
       ctaLabel: "Verify my email",
       ctaUrl: confirmationUrl,
-      footer:
-        "If you did not create this account, you can ignore this email.",
+      footer: "If you did not create this account, you can ignore this email.",
     }),
   });
 }

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 
 const mockEnv = vi.hoisted(() => ({
   RESEND_API_KEY: undefined as string | undefined,
@@ -17,15 +18,33 @@ import {
 const FROM = "OpenSEO <no-reply@mail.example.com>";
 
 function okResponse() {
-  return { ok: true, status: 200 } as Response;
+  return new Response(null, { status: 200 });
+}
+
+// Parsed with zod rather than read off a JSON.parse result so every field is
+// typed — the type-aware lint rules reject member access on an `any` value.
+const sentEmailSchema = z.object({
+  from: z.string(),
+  to: z.array(z.string()),
+  subject: z.string(),
+  html: z.string(),
+});
+
+// Structurally typed rather than RequestInit: the Workers-flavoured
+// RequestInit<CfProperties> from fetch's parameter tuple is not assignable to
+// the global RequestInit, and this helper only ever reads `body`.
+function sentEmail(init: { body?: BodyInit | null } | undefined) {
+  const body = init?.body;
+  // Narrow instead of stringifying: BodyInit can also be a stream/Blob, and
+  // String() on those would silently produce "[object Object]".
+  if (typeof body !== "string") {
+    throw new Error("expected the Resend request body to be a string");
+  }
+
+  return sentEmailSchema.parse(JSON.parse(body));
 }
 
 describe("hosted auth email config", () => {
-  beforeEach(() => {
-    mockEnv.RESEND_API_KEY = "re_test_key";
-    mockEnv.RESEND_FROM_EMAIL = FROM;
-  });
-
   it("is configured only when both Resend values are present", () => {
     expect(
       hasHostedAuthEmailConfig({
@@ -57,7 +76,7 @@ describe("Resend transactional senders", () => {
   });
 
   it("sends the verification email with the confirmation link", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(okResponse());
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(okResponse());
     vi.stubGlobal("fetch", fetchMock);
 
     await sendHostedVerificationEmail({
@@ -68,19 +87,21 @@ describe("Resend transactional senders", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("https://api.resend.com/emails");
-    expect(init.method).toBe("POST");
-    // Resend rejects requests without a User-Agent.
-    expect(init.headers["User-Agent"]).toBeTruthy();
-    expect(init.headers.Authorization).toBe("Bearer re_test_key");
+    expect(init?.method).toBe("POST");
+    // Resend rejects requests that carry no User-Agent.
+    expect(new Headers(init?.headers).get("User-Agent")).toBeTruthy();
+    expect(new Headers(init?.headers).get("Authorization")).toBe(
+      "Bearer re_test_key",
+    );
 
-    const body = JSON.parse(init.body);
+    const body = sentEmail(fetchMock.mock.calls[0][1]);
     expect(body.from).toBe(FROM);
     expect(body.to).toEqual(["user@example.com"]);
     expect(body.html).toContain("https://seo.example.com/verify?token=abc");
   });
 
   it("sends the password reset email", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(okResponse());
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(okResponse());
     vi.stubGlobal("fetch", fetchMock);
 
     await sendHostedPasswordResetEmail({
@@ -88,13 +109,13 @@ describe("Resend transactional senders", () => {
       resetUrl: "https://seo.example.com/reset?token=xyz",
     });
 
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    const body = sentEmail(fetchMock.mock.calls[0][1]);
     expect(body.html).toContain("https://seo.example.com/reset?token=xyz");
     expect(body.subject).toContain("Reset");
   });
 
   it("sends the invitation email", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(okResponse());
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(okResponse());
     vi.stubGlobal("fetch", fetchMock);
 
     await sendHostedInvitationEmail({
@@ -105,13 +126,13 @@ describe("Resend transactional senders", () => {
       inviterEmail: "theo@example.com",
     });
 
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    const body = sentEmail(fetchMock.mock.calls[0][1]);
     expect(body.html).toContain("https://seo.example.com/invite?token=inv");
     expect(body.html).toContain("Acme");
   });
 
   it("escapes HTML in invitation values", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(okResponse());
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(okResponse());
     vi.stubGlobal("fetch", fetchMock);
 
     await sendHostedInvitationEmail({
@@ -122,7 +143,7 @@ describe("Resend transactional senders", () => {
       inviterEmail: "theo@example.com",
     });
 
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    const body = sentEmail(fetchMock.mock.calls[0][1]);
     expect(body.html).not.toContain("<script>");
     expect(body.html).toContain("&lt;script&gt;");
     expect(body.html).toContain("A &amp; B");
@@ -132,7 +153,9 @@ describe("Resend transactional senders", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({ ok: false, status: 422 } as Response),
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(new Response(null, { status: 422 })),
     );
 
     await expect(
@@ -150,7 +173,7 @@ describe("Resend transactional senders", () => {
 
   it("fails closed when the Resend config is absent", async () => {
     mockEnv.RESEND_API_KEY = undefined;
-    const fetchMock = vi.fn().mockResolvedValue(okResponse());
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(okResponse());
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(

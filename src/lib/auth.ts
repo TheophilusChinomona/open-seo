@@ -22,11 +22,12 @@ import { resolveSignInHostedOrganization } from "@/server/auth/default-hosted-or
 import { onInvitationAccepted } from "@/server/auth/invited-member";
 import { AuthRepository } from "@/server/auth/repositories/AuthRepository";
 import { captureDubReferralSignup } from "@/server/referrals/dub";
+import { upsertHostedSignupContact } from "@/server/email/loops";
 import {
+  hasHostedAuthEmailConfig,
   sendHostedPasswordResetEmail,
   sendHostedVerificationEmail,
-  upsertHostedSignupContact,
-} from "@/server/email/loops";
+} from "@/server/email/resend";
 
 const hostedBaseUrlSchema = z
   .string()
@@ -364,19 +365,6 @@ function getGoogleSocialProviderConfig() {
   };
 }
 
-function hasHostedAuthEmailConfig() {
-  const loopsVars = [
-    "LOOPS_API_KEY",
-    "LOOPS_TRANSACTIONAL_VERIFY_EMAIL_ID",
-    "LOOPS_TRANSACTIONAL_RESET_PASSWORD_ID",
-  ];
-
-  return loopsVars.every((name) => {
-    const value: unknown = Reflect.get(env, name);
-    return typeof value === "string" && value.trim() !== "";
-  });
-}
-
 export function hasHostedAuthConfig() {
   try {
     getHostedBaseUrl();
@@ -385,7 +373,7 @@ export function hasHostedAuthConfig() {
     return (
       hasHostedTurnstileConfig(env) &&
       (Reflect.get(env, "BYPASS_EMAIL_VERIFICATION") === "true" ||
-        hasHostedAuthEmailConfig())
+        hasHostedAuthEmailConfig(env))
     );
   } catch {
     return false;

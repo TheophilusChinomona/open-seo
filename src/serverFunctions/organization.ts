@@ -6,7 +6,7 @@ import { hasOrgPermission } from "@/lib/org-permissions";
 import { consumeInvitationSendBudget } from "@/server/auth/invitation-send-limit";
 import { requireOrgPermission } from "@/server/auth/org-gate";
 import { AuthRepository } from "@/server/auth/repositories/AuthRepository";
-import { sendHostedInvitationEmail } from "@/server/email/loops";
+import { sendHostedInvitationEmail } from "@/server/email/resend";
 import { AppError } from "@/server/lib/errors";
 import { requireAuthenticatedContext } from "@/serverFunctions/middleware";
 

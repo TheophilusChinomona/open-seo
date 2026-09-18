@@ -4,78 +4,18 @@ import {
   updateLoopsContact,
 } from "@/server/email/loops-client";
 
-const LOOPS_TRANSACTIONAL_URL = "https://app.loops.so/api/v1/transactional";
+// Loops is an OPTIONAL marketing integration: it mirrors signups (and billing
+// status, see billing/loops-sync.ts) into a Loops audience. It is NOT used for
+// authentication email — verification, password reset, and invitations are sent
+// through Resend (see email/resend.ts). Without LOOPS_API_KEY every function
+// here is a no-op, so auth keeps working on a deployment that never configures
+// Loops.
 
 function getOptionalEnv(name: string) {
   const value: unknown = Reflect.get(env, name);
   const trimmed = typeof value === "string" ? value.trim() : "";
 
   return trimmed || null;
-}
-
-function getRequiredEnv(name: string) {
-  const value = getOptionalEnv(name);
-
-  if (!value) {
-    throw new Error(`${name} is required in hosted mode`);
-  }
-
-  return value;
-}
-
-function getHostedAuthEmailConfig() {
-  return {
-    apiKey: getRequiredEnv("LOOPS_API_KEY"),
-    verificationTemplateId: getRequiredEnv(
-      "LOOPS_TRANSACTIONAL_VERIFY_EMAIL_ID",
-    ),
-    passwordResetTemplateId: getRequiredEnv(
-      "LOOPS_TRANSACTIONAL_RESET_PASSWORD_ID",
-    ),
-  };
-}
-
-async function sendLoopsTransactionalEmail({
-  apiKey,
-  email,
-  transactionalId,
-  dataVariables,
-}: {
-  apiKey: string;
-  email: string;
-  transactionalId: string;
-  dataVariables: Record<string, string>;
-}) {
-  const response = await fetch(LOOPS_TRANSACTIONAL_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      transactionalId,
-      email,
-      addToAudience: false,
-      dataVariables,
-    }),
-    signal: AbortSignal.timeout(10_000),
-  });
-
-  if (response.ok) {
-    return;
-  }
-
-  const errorPayload = await response.json().catch(() => null);
-  console.error("Loops transactional email error:", {
-    status: response.status,
-    email,
-    transactionalId,
-    errorPayload,
-  });
-
-  throw new Error(
-    `Failed to send Loops transactional email (${response.status})`,
-  );
 }
 
 export async function upsertHostedSignupContact({
@@ -106,74 +46,5 @@ export async function upsertHostedSignupContact({
       ...getContactNameParts(name),
     },
     logContext: { action: "signup-contact-sync" },
-  });
-}
-
-export async function sendHostedVerificationEmail({
-  email,
-  confirmationUrl,
-}: {
-  email: string;
-  confirmationUrl: string;
-}) {
-  const config = getHostedAuthEmailConfig();
-  await sendLoopsTransactionalEmail({
-    apiKey: config.apiKey,
-    email,
-    transactionalId: config.verificationTemplateId,
-    dataVariables: {
-      appName: "OpenSEO",
-      confirmationUrl,
-    },
-  });
-}
-
-export async function sendHostedInvitationEmail({
-  email,
-  inviteUrl,
-  organizationName,
-  inviterName,
-  inviterEmail,
-}: {
-  email: string;
-  inviteUrl: string;
-  organizationName: string;
-  inviterName: string;
-  inviterEmail: string;
-}) {
-  // Not part of getHostedAuthEmailConfig(): that trio gates hasHostedAuthConfig
-  // and adding a new required var there would brick existing deployments.
-  const apiKey = getRequiredEnv("LOOPS_API_KEY");
-  const templateId = getRequiredEnv("LOOPS_TRANSACTIONAL_INVITATION_ID");
-  await sendLoopsTransactionalEmail({
-    apiKey,
-    email,
-    transactionalId: templateId,
-    dataVariables: {
-      appName: "OpenSEO",
-      inviteUrl,
-      organizationName,
-      inviterName,
-      inviterEmail,
-    },
-  });
-}
-
-export async function sendHostedPasswordResetEmail({
-  email,
-  resetUrl,
-}: {
-  email: string;
-  resetUrl: string;
-}) {
-  const config = getHostedAuthEmailConfig();
-  await sendLoopsTransactionalEmail({
-    apiKey: config.apiKey,
-    email,
-    transactionalId: config.passwordResetTemplateId,
-    dataVariables: {
-      appName: "OpenSEO",
-      resetUrl,
-    },
   });
 }

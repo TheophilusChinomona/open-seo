@@ -59,11 +59,17 @@ function checkAuthMode(env: EnvRecord, items: PreflightItem[]): void {
   }
 
   if (mode === "hosted") {
+    // Every one of these is also required by hasHostedAuthConfig() at runtime,
+    // which refuses every /api/auth/* request when any is missing. Checking
+    // them here turns that into a boot-time failure with the same variable
+    // names, instead of a 500 on the sign-in page.
     const missing = [
       "BETTER_AUTH_URL",
       "BETTER_AUTH_SECRET",
       "GOOGLE_CLIENT_ID",
       "GOOGLE_CLIENT_SECRET",
+      "RESEND_API_KEY",
+      "RESEND_FROM_EMAIL",
     ].filter((name) => !get(env, name));
     items.push(
       missing.length

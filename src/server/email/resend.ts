@@ -33,7 +33,7 @@ function getRequiredEnv(name: string) {
   return value;
 }
 
-export function getHostedAuthEmailConfig(): EmailConfig {
+function getHostedAuthEmailConfig(): EmailConfig {
   return {
     apiKey: getRequiredEnv("RESEND_API_KEY"),
     from: getRequiredEnv("RESEND_FROM_EMAIL"),

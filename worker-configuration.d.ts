@@ -16,8 +16,8 @@ declare namespace Cloudflare {
 		BETTER_AUTH_URL: string;
 		AUTUMN_SECRET_KEY: string;
 		LOOPS_API_KEY: string;
-		LOOPS_TRANSACTIONAL_VERIFY_EMAIL_ID: string;
-		LOOPS_TRANSACTIONAL_RESET_PASSWORD_ID: string;
+		RESEND_API_KEY: string;
+		RESEND_FROM_EMAIL: string;
 		POSTHOG_HOST: string;
 		POSTHOG_PUBLIC_KEY: string;
 		// Hand-patched: hosted-prod-only binding declared in alchemy.run.ts,
@@ -34,7 +34,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "DATAFORSEO_API_KEY" | "PORT" | "AUTH_MODE" | "BETTER_AUTH_SECRET" | "BETTER_AUTH_URL" | "AUTUMN_SECRET_KEY" | "LOOPS_API_KEY" | "LOOPS_TRANSACTIONAL_VERIFY_EMAIL_ID" | "LOOPS_TRANSACTIONAL_RESET_PASSWORD_ID" | "POSTHOG_HOST" | "POSTHOG_PUBLIC_KEY">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "DATAFORSEO_API_KEY" | "PORT" | "AUTH_MODE" | "BETTER_AUTH_SECRET" | "BETTER_AUTH_URL" | "AUTUMN_SECRET_KEY" | "LOOPS_API_KEY" | "RESEND_API_KEY" | "RESEND_FROM_EMAIL" | "POSTHOG_HOST" | "POSTHOG_PUBLIC_KEY">> {}
 }
 
 // Begin runtime types

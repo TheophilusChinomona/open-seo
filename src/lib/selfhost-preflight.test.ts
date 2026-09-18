@@ -82,7 +82,44 @@ describe("runSelfhostPreflight", () => {
     const item = itemFor(result, "AUTH_MODE");
     expect(item?.message).toContain("BETTER_AUTH_URL");
     expect(item?.message).toContain("GOOGLE_CLIENT_ID");
+    expect(item?.message).toContain("RESEND_API_KEY");
+    expect(item?.message).toContain("RESEND_FROM_EMAIL");
     expect(item?.message).not.toContain("BETTER_AUTH_SECRET,");
+  });
+
+  it("passes hosted mode once the auth and email variables are present", () => {
+    const result = runSelfhostPreflight({
+      AUTH_MODE: "hosted",
+      BETTER_AUTH_URL: "https://seo.example.com",
+      BETTER_AUTH_SECRET: "x".repeat(40),
+      GOOGLE_CLIENT_ID: "client-id",
+      GOOGLE_CLIENT_SECRET: "client-secret",
+      RESEND_API_KEY: "re_test",
+      RESEND_FROM_EMAIL: "OpenSEO <no-reply@mail.example.com>",
+    });
+
+    expect(result.failed).toBe(false);
+    expect(itemFor(result, "AUTH_MODE")?.level).toBe("ok");
+  });
+
+  it("treats a blank email variable as missing in hosted mode", () => {
+    const result = runSelfhostPreflight({
+      AUTH_MODE: "hosted",
+      BETTER_AUTH_URL: "https://seo.example.com",
+      BETTER_AUTH_SECRET: "x".repeat(40),
+      GOOGLE_CLIENT_ID: "client-id",
+      GOOGLE_CLIENT_SECRET: "client-secret",
+      RESEND_API_KEY: "re_test",
+      RESEND_FROM_EMAIL: "   ",
+    });
+
+    expect(result.failed).toBe(true);
+    expect(itemFor(result, "AUTH_MODE")?.message).toContain(
+      "RESEND_FROM_EMAIL",
+    );
+    expect(itemFor(result, "AUTH_MODE")?.message).not.toContain(
+      "RESEND_API_KEY",
+    );
   });
 
   it("mentions ALLOWED_HOST when unset", () => {

@@ -105,10 +105,18 @@ docker compose -f compose.yaml -f compose.hosted.yaml up -d
 
 The overlay requires `AUTH_MODE=hosted`, `DATABASE_PROVIDER=postgres`,
 `BETTER_AUTH_URL`, a random `BETTER_AUTH_SECRET` of at least 32 characters,
-the Google OAuth credentials, all three Loops transactional email variables,
-and `POSTGRES_DATABASE_URL`. The URL must target the private PostgreSQL
+the Google OAuth credentials, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and
+`POSTGRES_DATABASE_URL`. The URL must target the private PostgreSQL
 network and the `open_seo` database using the least-privilege
 `open_seo_app` role. URL-encode reserved characters in its password.
+
+Authentication email (verification, password reset, and team invitations) is
+sent through Resend. `RESEND_FROM_EMAIL` must be an address on a domain you
+have verified in Resend, for example
+`OpenSEO <no-reply@mail.yourdomain.com>`. Hosted auth refuses every
+`/api/auth/*` request until both Resend values are present, so the container
+preflight fails at boot with this list rather than surfacing a 500 on the
+sign-in page.
 
 Before starting the app, attach the PostgreSQL container to the exact same
 external network. Apply `drizzle-pg` migrations with the protected connection
